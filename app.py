@@ -26,11 +26,7 @@ def _zerogpu_warmup():
 
 def respond(message, history, system_prompt, max_tokens, temperature, top_p):
     messages = [{"role": "system", "content": system_prompt}]
-    for user_msg, assistant_msg in history:
-        if user_msg:
-            messages.append({"role": "user", "content": user_msg})
-        if assistant_msg:
-            messages.append({"role": "assistant", "content": assistant_msg})
+    messages.extend(history)
     messages.append({"role": "user", "content": message})
 
     partial = ""
