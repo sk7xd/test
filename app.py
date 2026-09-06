@@ -1,6 +1,7 @@
 import os
 
 import gradio as gr
+import spaces
 from huggingface_hub import InferenceClient
 
 MODEL_ID = "Qwen/Qwen2.5-32B-Instruct"
@@ -8,6 +9,15 @@ MODEL_ID = "Qwen/Qwen2.5-32B-Instruct"
 client = InferenceClient(model=MODEL_ID, token=os.environ.get("HF_TOKEN"))
 
 SYSTEM_PROMPT = "You are Qwen, a helpful and knowledgeable AI assistant."
+
+
+@spaces.GPU
+def _zerogpu_warmup():
+    # This Space calls the Hugging Face Inference API rather than running the
+    # model locally, so no GPU work happens here. The decorator only exists
+    # to satisfy ZeroGPU hardware, which requires a @spaces.GPU function to
+    # be present at startup.
+    return True
 
 
 def respond(message, history, system_prompt, max_tokens, temperature, top_p):
@@ -50,4 +60,5 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
+    _zerogpu_warmup()
     demo.queue().launch()
