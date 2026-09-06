@@ -6,7 +6,11 @@ from huggingface_hub import InferenceClient
 
 MODEL_ID = "Qwen/Qwen2.5-32B-Instruct"
 
-client = InferenceClient(model=MODEL_ID, token=os.environ.get("HF_TOKEN"))
+client = InferenceClient(
+    model=MODEL_ID,
+    token=os.environ.get("HF_TOKEN"),
+    provider="featherless-ai",
+)
 
 SYSTEM_PROMPT = "You are Qwen, a helpful and knowledgeable AI assistant."
 
@@ -61,4 +65,4 @@ demo = gr.ChatInterface(
 
 if __name__ == "__main__":
     _zerogpu_warmup()
-    demo.queue().launch()
+    demo.queue().launch(ssr_mode=False)
