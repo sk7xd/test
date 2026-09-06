@@ -55,7 +55,7 @@ demo = gr.ChatInterface(
     ),
     additional_inputs=[
         gr.Textbox(value=SYSTEM_PROMPT, label="System prompt"),
-        gr.Slider(minimum=64, maximum=2048, value=512, step=64, label="Max new tokens"),
+        gr.Slider(minimum=64, maximum=8192, value=2048, step=64, label="Max new tokens"),
         gr.Slider(minimum=0.0, maximum=2.0, value=0.7, step=0.1, label="Temperature"),
         gr.Slider(minimum=0.0, maximum=1.0, value=0.9, step=0.05, label="Top-p"),
     ],
