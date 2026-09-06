@@ -42,6 +42,8 @@ def respond(message, history, system_prompt, max_tokens, temperature, top_p):
         stream=True,
     )
     for chunk in stream:
+        if not chunk.choices:
+            continue
         token = chunk.choices[0].delta.content
         if token:
             partial += token
