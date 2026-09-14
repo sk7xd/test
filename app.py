@@ -173,7 +173,7 @@ with gr.Blocks() as demo:
         top_p_slider = gr.Slider(minimum=0.0, maximum=1.0, value=0.9, step=0.05, label="Top-p")
         tts_speaker_dropdown = gr.Dropdown(choices=TTS_SPEAKERS, value="Ryan", label="Voice")
 
-    chatbot = gr.Chatbot(type="messages", label="Chat")
+    chatbot = gr.Chatbot(label="Chat")
     audio_output = gr.Audio(label="Spoken response", autoplay=True)
     msg_box = gr.Textbox(label="Message", placeholder="Ask something...")
 
