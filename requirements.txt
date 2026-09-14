@@ -1,6 +1,5 @@
 huggingface_hub>=0.25.0
 spaces
-gradio_client>=1.0.0
 pypdf>=4.0.0
 sentence-transformers>=3.0.0
 numpy
