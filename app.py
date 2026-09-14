@@ -26,7 +26,7 @@ client = InferenceClient(
 )
 # Qwen3-TTS isn't served by an Inference Provider we have access to, so we
 # call the cloned Qwen3-TTS Space directly as a Gradio API instead.
-tts_client = GradioClient(TTS_SPACE_ID, hf_token=os.environ.get("HF_TOKEN"))
+tts_client = GradioClient(TTS_SPACE_ID, token=os.environ.get("HF_TOKEN"))
 embedder = SentenceTransformer(EMBED_MODEL_ID)
 
 SYSTEM_PROMPT = "You are Qwen, a helpful and knowledgeable AI assistant."
