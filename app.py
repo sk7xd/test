@@ -1,32 +1,32 @@
 import os
-import tempfile
 
 import gradio as gr
 import numpy as np
 import spaces
+from gradio_client import Client as GradioClient
 from huggingface_hub import InferenceClient
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
 MODEL_ID = "Qwen/Qwen2.5-32B-Instruct"
-TTS_MODEL_ID = "Qwen/Qwen3-TTS"
+TTS_SPACE_ID = "pbkarthi/Qwen3-TTS"
 EMBED_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 100
 TOP_K = 4
+
+TTS_SPEAKERS = [
+    "Aiden", "Dylan", "Eric", "Ono_anna", "Ryan", "Serena", "Sohee", "Uncle_fu", "Vivian"
+]
 
 client = InferenceClient(
     model=MODEL_ID,
     token=os.environ.get("HF_TOKEN"),
     provider="featherless-ai",
 )
-# TODO: set the correct provider once confirmed from the Qwen3-TTS model
-# card's "Inference Providers" widget (same issue we had with the chat
-# model needing provider="featherless-ai" set explicitly).
-tts_client = InferenceClient(
-    token=os.environ.get("HF_TOKEN"),
-    provider="auto",
-)
+# Qwen3-TTS isn't served by an Inference Provider we have access to, so we
+# call the cloned Qwen3-TTS Space directly as a Gradio API instead.
+tts_client = GradioClient(TTS_SPACE_ID, hf_token=os.environ.get("HF_TOKEN"))
 embedder = SentenceTransformer(EMBED_MODEL_ID)
 
 SYSTEM_PROMPT = "You are Qwen, a helpful and knowledgeable AI assistant."
@@ -78,14 +78,22 @@ def retrieve_context(query, chunks, embeddings):
     return "\n\n---\n\n".join(chunks[i] for i in top_indices)
 
 
-def synthesize_speech(text):
+def synthesize_speech(text, speaker):
     if not text.strip():
         return None
-    audio_bytes = tts_client.text_to_speech(text, model=TTS_MODEL_ID)
-    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    tmp.write(audio_bytes)
-    tmp.close()
-    return tmp.name
+    try:
+        audio_path, _status = tts_client.predict(
+            text=text.strip(),
+            language="Auto",
+            speaker=speaker,
+            instruct="",
+            model_size="0.6B",
+            api_name="/generate_custom_voice",
+        )
+        return audio_path
+    except Exception as e:
+        print(f"TTS synthesis failed: {type(e).__name__}: {e}")
+        return None
 
 
 def user_submit(message, history):
@@ -93,7 +101,7 @@ def user_submit(message, history):
     return "", history
 
 
-def bot_respond(history, system_prompt, max_tokens, temperature, top_p, chunks, embeddings):
+def bot_respond(history, system_prompt, max_tokens, temperature, top_p, tts_speaker, chunks, embeddings):
     user_message = history[-1]["content"]
     context = retrieve_context(user_message, chunks, embeddings)
     if context:
@@ -130,7 +138,7 @@ def bot_respond(history, system_prompt, max_tokens, temperature, top_p, chunks, 
             history[-1]["content"] = partial
             yield history, None
 
-    audio_path = synthesize_speech(partial)
+    audio_path = synthesize_speech(partial, tts_speaker)
     yield history, audio_path
 
 
@@ -138,7 +146,7 @@ with gr.Blocks() as demo:
     gr.Markdown(
         f"# Qwen2.5-32B-Instruct with voice replies\n"
         f"Ask [{MODEL_ID}](https://huggingface.co/{MODEL_ID}) a question and hear the "
-        f"answer spoken back via [{TTS_MODEL_ID}](https://huggingface.co/{TTS_MODEL_ID}), "
+        f"answer spoken back via the [Qwen3-TTS Space](https://huggingface.co/spaces/{TTS_SPACE_ID}), "
         "optionally grounded on PDFs you upload below."
     )
 
@@ -163,6 +171,7 @@ with gr.Blocks() as demo:
         max_tokens_slider = gr.Slider(minimum=64, maximum=8192, value=2048, step=64, label="Max new tokens")
         temperature_slider = gr.Slider(minimum=0.0, maximum=2.0, value=0.7, step=0.1, label="Temperature")
         top_p_slider = gr.Slider(minimum=0.0, maximum=1.0, value=0.9, step=0.05, label="Top-p")
+        tts_speaker_dropdown = gr.Dropdown(choices=TTS_SPEAKERS, value="Ryan", label="Voice")
 
     chatbot = gr.Chatbot(type="messages", label="Chat")
     audio_output = gr.Audio(label="Spoken response", autoplay=True)
@@ -180,6 +189,7 @@ with gr.Blocks() as demo:
             max_tokens_slider,
             temperature_slider,
             top_p_slider,
+            tts_speaker_dropdown,
             chunks_state,
             embeddings_state,
         ],
