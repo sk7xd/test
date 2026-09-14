@@ -15,6 +15,16 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Check HF_TOKEN secret is visible
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is EMPTY or not set for this repo/workflow."
+          else
+            echo "HF_TOKEN is set, length: ${#HF_TOKEN}"
+          fi
+
       - name: Push to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
